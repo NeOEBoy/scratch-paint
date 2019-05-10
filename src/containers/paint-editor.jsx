@@ -128,7 +128,7 @@ class PaintEditor extends React.Component {
         if (this.props.format === Formats.VECTOR && isBitmap(prevProps.format)) {
             convertToVector(this.props.clearSelectedItems, this.props.onUpdateImage);
         } else if (isVector(prevProps.format) && this.props.format === Formats.BITMAP) {
-            convertToBitmap(this.props.clearSelectedItems, this.props.onUpdateImage);
+            convertToBitmap(this.props.clearSelectedItems, this.props.onUpdateImage, this.props.inlineSvgFontsAsync);
         }
     }
     componentWillUnmount () {
@@ -348,6 +348,7 @@ PaintEditor.propTypes = {
     onRedo: PropTypes.func.isRequired,
     onUndo: PropTypes.func.isRequired,
     onUpdateImage: PropTypes.func.isRequired,
+    inlineSvgFontsAsync: PropTypes.func.isRequired,
     onUpdateName: PropTypes.func.isRequired,
     previousTool: PropTypes.shape({ // paper.Tool
         activate: PropTypes.func.isRequired,

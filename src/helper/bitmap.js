@@ -2,7 +2,7 @@ import paper from '@scratch/paper';
 import {createCanvas, clearRaster, getRaster, hideGuideLayers, showGuideLayers} from './layer';
 import {getGuideColor} from './guides';
 import {clearSelection} from './selection';
-import {inlineSvgFonts} from 'scratch-svg-renderer';
+// import {inlineSvgFontsAsync} from 'scratch-svg-renderer';
 import Formats from '../lib/format';
 
 const forEachLinePoint = function (point1, point2, callback) {
@@ -361,7 +361,7 @@ const getTrimmedRaster = function (shouldInsert) {
     return trimmedRaster;
 };
 
-const convertToBitmap = function (clearSelectedItems, onUpdateImage) {
+const convertToBitmap = function (clearSelectedItems, onUpdateImage, inlineSvgFontsAsync) {
     // @todo if the active layer contains only rasters, drawing them directly to the raster layer
     // would be more efficient.
 
@@ -379,34 +379,37 @@ const convertToBitmap = function (clearSelectedItems, onUpdateImage) {
     // Get rid of anti-aliasing
     // @todo get crisp text https://github.com/LLK/scratch-paint/issues/508
     svg.setAttribute('shape-rendering', 'crispEdges');
-    inlineSvgFonts(svg);
-    const svgString = (new XMLSerializer()).serializeToString(svg);
+    // inlineSvgFonts(svg)
+    // 原来为同步调用，但是没有使用返回值，不知道为何，改成异步后，字体貌似也转换，后期调查 -neo
+    inlineSvgFontsAsync(svg).then((svgText)=>{
+      const svgString = (new XMLSerializer()).serializeToString(svgText);
 
-    // Put anti-aliased SVG into image, and dump image back into canvas
-    const img = new Image();
-    img.onload = () => {
-        if (img.width && img.height) {
-            getRaster().drawImage(
-                img,
-                new paper.Point(Math.floor(bounds.topLeft.x), Math.floor(bounds.topLeft.y)));
-        }
-        paper.project.activeLayer.removeChildren();
-        onUpdateImage(false /* skipSnapshot */, Formats.BITMAP /* formatOverride */);
-    };
-    img.onerror = () => {
-        // Fallback if browser does not support SVG data URIs in images.
-        // The problem with rasterize is that it will anti-alias.
-        const raster = paper.project.activeLayer.rasterize(72, false /* insert */);
-        raster.onLoad = () => {
-            if (raster.canvas.width && raster.canvas.height) {
-                getRaster().drawImage(raster.canvas, raster.bounds.topLeft);
-            }
-            paper.project.activeLayer.removeChildren();
-            onUpdateImage(false /* skipSnapshot */, Formats.BITMAP /* formatOverride */);
-        };
-    };
-    // Hash tags will break image loading without being encoded first
-    img.src = `data:image/svg+xml;utf8,${encodeURIComponent(svgString)}`;
+      // Put anti-aliased SVG into image, and dump image back into canvas
+      const img = new Image();
+      img.onload = () => {
+          if (img.width && img.height) {
+              getRaster().drawImage(
+                  img,
+                  new paper.Point(Math.floor(bounds.topLeft.x), Math.floor(bounds.topLeft.y)));
+          }
+          paper.project.activeLayer.removeChildren();
+          onUpdateImage(false /* skipSnapshot */, Formats.BITMAP /* formatOverride */);
+      };
+      img.onerror = () => {
+          // Fallback if browser does not support SVG data URIs in images.
+          // The problem with rasterize is that it will anti-alias.
+          const raster = paper.project.activeLayer.rasterize(72, false /* insert */);
+          raster.onLoad = () => {
+              if (raster.canvas.width && raster.canvas.height) {
+                  getRaster().drawImage(raster.canvas, raster.bounds.topLeft);
+              }
+              paper.project.activeLayer.removeChildren();
+              onUpdateImage(false /* skipSnapshot */, Formats.BITMAP /* formatOverride */);
+          };
+      };
+      // Hash tags will break image loading without being encoded first
+      img.src = `data:image/svg+xml;utf8,${encodeURIComponent(svgString)}`;
+    });
 };
 
 const convertToVector = function (clearSelectedItems, onUpdateImage) {
