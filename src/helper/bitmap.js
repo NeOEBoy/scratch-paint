@@ -379,11 +379,8 @@ const convertToBitmap = function (clearSelectedItems, onUpdateImage, inlineSvgFo
     // Get rid of anti-aliasing
     // @todo get crisp text https://github.com/LLK/scratch-paint/issues/508
     svg.setAttribute('shape-rendering', 'crispEdges');
-    // inlineSvgFonts(svg)
-    // 原来为同步调用，但是没有使用返回值，不知道为何，改成异步后，字体貌似也转换，后期调查 -neo
-    inlineSvgFontsAsync(svg).then((svgText)=>{
-      const svgString = (new XMLSerializer()).serializeToString(svgText);
-
+    let svgString = (new XMLSerializer()).serializeToString(svg);
+    inlineSvgFontsAsync(svgString).then((svgString)=>{
       // Put anti-aliased SVG into image, and dump image back into canvas
       const img = new Image();
       img.onload = () => {
